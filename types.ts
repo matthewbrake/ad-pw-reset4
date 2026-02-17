@@ -1,4 +1,6 @@
 
+export type LogLevel = 'DEBUG' | 'INFO' | 'WARN' | 'ERROR' | 'SUCCESS';
+
 export interface User {
   id: string;
   displayName: string;
@@ -10,7 +12,7 @@ export interface User {
   passwordExpiryDate: string | null; 
   neverExpires: boolean;
   assignedGroups?: string[];
-  // Extended Metadata for Deep Intelligence
+  // Extended Metadata
   managerName?: string;
   emailAddress?: string;
   forceChange?: boolean;
@@ -30,6 +32,14 @@ export interface PermissionResult {
     auth: boolean;
     userRead: boolean;
     groupRead: boolean;
+}
+
+// Added missing JobResult interface
+export interface JobResult {
+    success: boolean;
+    message?: string;
+    logs?: LogEntry[];
+    previewData?: any[];
 }
 
 export interface SmtpConfig {
@@ -60,6 +70,13 @@ export interface NotificationProfile {
     assignedGroups: string[];
 }
 
+export interface LogEntry {
+  timestamp: string;
+  level: LogLevel;
+  message: string;
+  details?: any;
+}
+
 export interface QueueItem {
     id: string;
     recipient: string;
@@ -75,32 +92,4 @@ export interface QueueItem {
         expiryDate: string;
         daysUntilExpiry: number;
     };
-}
-
-export interface LogEntry {
-  timestamp: string;
-  level: 'info' | 'warn' | 'error' | 'success' | 'skip' | 'queue';
-  message: string;
-  details?: any;
-}
-
-export interface AuditEntry {
-    timestamp: string;
-    email: string;
-    profileId: string;
-    status: 'sent' | 'failed' | 'manual';
-    details: string;
-    rawPayload?: any;
-}
-
-export interface JobResult {
-    success: boolean;
-    logs: LogEntry[];
-    previewData?: {
-        user: string;
-        email: string;
-        daysUntilExpiry: number;
-        expiryDate: string;
-        group: string;
-    }[];
 }

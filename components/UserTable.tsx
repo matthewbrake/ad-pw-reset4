@@ -64,20 +64,20 @@ const UserTable: React.FC<UserTableProps> = ({ users, selectedIds, onSelectionCh
   );
 
   return (
-    <div className="overflow-x-auto border border-gray-700 rounded-xl bg-gray-900/50">
+    <div className="overflow-x-auto border border-gray-700 rounded-xl bg-gray-900/50 shadow-inner">
         <table className="min-w-full divide-y divide-gray-700">
             <thead className="bg-gray-800/90 backdrop-blur sticky top-0 z-10">
                 <tr>
                     <th className="px-4 py-3 text-left border-b border-gray-700">
-                        <input type="checkbox" checked={selectedIds.length === users.length && users.length > 0} onChange={toggleSelectAll} className="h-4 w-4 rounded bg-gray-700 border-gray-600 text-primary-600 focus:ring-primary-500" />
+                        <input type="checkbox" checked={selectedIds.length === users.length && users.length > 0} onChange={toggleSelectAll} className="h-4 w-4 rounded bg-gray-700 border-gray-600 text-primary-600" />
                     </th>
                     <TableHeader columnKey="displayName" label="Identity" />
+                    <TableHeader columnKey="managerName" label="Manager" />
                     <TableHeader columnKey="accountEnabled" label="Status" />
-                    <TableHeader columnKey="userPrincipalName" label="Principal Name" />
-                    <TableHeader columnKey="neverExpires" label="Never Exp" />
-                    <TableHeader columnKey="passwordLastSetDateTime" label="Last Reset" />
-                    <TableHeader columnKey="passwordExpiryDate" label="Expiry Date" />
-                    <TableHeader columnKey="passwordExpiresInDays" label="Days Left" />
+                    <TableHeader columnKey="userPrincipalName" label="Principal" />
+                    <TableHeader columnKey="neverExpires" label="Never" />
+                    <TableHeader columnKey="passwordExpiryDate" label="Expiry" />
+                    <TableHeader columnKey="passwordExpiresInDays" label="Days" />
                     <th className="px-4 py-3 text-left text-[10px] font-black text-gray-500 uppercase tracking-widest border-b border-gray-700">Health</th>
                 </tr>
             </thead>
@@ -86,24 +86,24 @@ const UserTable: React.FC<UserTableProps> = ({ users, selectedIds, onSelectionCh
                     const status = getStatus(user.passwordExpiresInDays, user.neverExpires);
                     const isSelected = selectedIds.includes(user.id);
                     return (
-                        <tr key={user.id} className={`transition-all duration-150 group ${isSelected ? 'bg-primary-900/10' : 'hover:bg-gray-700/20'}`}>
-                            <td className="px-4 py-4 whitespace-nowrap">
-                                <input type="checkbox" checked={isSelected} onChange={() => toggleSelectRow(user.id)} className="h-4 w-4 rounded bg-gray-700 border-gray-600 text-primary-600 focus:ring-primary-500" />
+                        <tr key={user.id} className={`transition-all group ${isSelected ? 'bg-primary-900/10' : 'hover:bg-gray-700/20'}`}>
+                            <td className="px-4 py-4">
+                                <input type="checkbox" checked={isSelected} onChange={() => toggleSelectRow(user.id)} className="h-4 w-4 rounded bg-gray-700 border-gray-600 text-primary-600" />
                             </td>
                             <td className="px-4 py-4 whitespace-nowrap">
                                 <div className="text-sm font-bold text-white group-hover:text-primary-400 transition-colors">{user.displayName}</div>
                             </td>
+                            <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-400 font-bold">{user.managerName}</td>
                             <td className="px-4 py-4 whitespace-nowrap">
                                 <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest border ${user.accountEnabled ? 'bg-emerald-900/20 text-emerald-400 border-emerald-500/20' : 'bg-gray-700 text-gray-400 border-gray-600'}`}>
                                     {user.accountEnabled ? 'Enabled' : 'Disabled'}
                                 </span>
                             </td>
-                            <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-500 font-mono">{user.userPrincipalName}</td>
+                            <td className="px-4 py-4 whitespace-nowrap text-[10px] text-gray-500 font-mono">{user.userPrincipalName}</td>
                             <td className="px-4 py-4 whitespace-nowrap text-sm">
-                                {user.neverExpires ? <span className="text-indigo-400 flex items-center gap-1.5 font-black text-[10px] uppercase tracking-tighter"><div className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse"></div> YES</span> : <span className="text-gray-600 text-[10px] font-bold uppercase">NO</span>}
+                                {user.neverExpires ? <span className="text-indigo-400 font-black text-[10px]">YES</span> : <span className="text-gray-600 text-[10px] font-bold">NO</span>}
                             </td>
-                            <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-400 font-mono">{user.passwordLastSetDateTime ? new Date(user.passwordLastSetDateTime).toLocaleDateString() : '—'}</td>
-                            <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-400 font-mono">{user.neverExpires ? <span className="text-gray-600">∞</span> : (user.passwordExpiryDate ? new Date(user.passwordExpiryDate).toLocaleDateString() : '—')}</td>
+                            <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-400 font-mono">{user.neverExpires ? '∞' : (user.passwordExpiryDate ? new Date(user.passwordExpiryDate).toLocaleDateString() : '—')}</td>
                             <td className="px-4 py-4 whitespace-nowrap text-center">
                                 <span className={`text-sm font-mono font-bold ${user.passwordExpiresInDays <= 14 && !user.neverExpires ? 'text-orange-400' : 'text-gray-300'}`}>{user.neverExpires ? '∞' : user.passwordExpiresInDays}</span>
                             </td>
@@ -115,7 +115,6 @@ const UserTable: React.FC<UserTableProps> = ({ users, selectedIds, onSelectionCh
                 })}
             </tbody>
         </table>
-        {users.length === 0 && <div className="p-20 text-center text-gray-500 font-mono tracking-widest uppercase bg-gray-900/20">Zero records matching current criteria</div>}
     </div>
   );
 };

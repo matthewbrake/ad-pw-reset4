@@ -27,56 +27,69 @@ export const subscribeToLogs = (listener: (log: LogEntry) => void) => {
  */
 
 export const fetchUsers = async (config: GraphApiConfig): Promise<User[]> => {
-  log('info', 'Querying Microsoft Graph via Backend...');
+  // FIX: Change 'info' to uppercase 'INFO' to match LogLevel type
+  log('INFO', 'Querying Microsoft Graph via Backend...');
   try {
     const response = await fetch('/api/users');
     const data = await response.json();
     if (!response.ok) throw new Error(data.message || 'Graph Query Failed');
-    log('success', `Synchronized ${data.length} user objects.`);
+    // FIX: Change 'success' to uppercase 'SUCCESS' to match LogLevel type
+    log('SUCCESS', `Synchronized ${data.length} user objects.`);
     return data;
   } catch (error: any) {
-    log('error', 'AD Synchronization Failed', error.message);
+    // FIX: Change 'error' to uppercase 'ERROR' to match LogLevel type
+    log('ERROR', 'AD Synchronization Failed', error.message);
     throw error;
   }
 };
 
 export const saveBackendConfig = async (config: GraphApiConfig, smtp: SmtpConfig) => {
-    log('info', 'Committing Configuration to Infrastructure...');
+    // FIX: Change 'info' to uppercase 'INFO' to match LogLevel type
+    log('INFO', 'Committing Configuration to Infrastructure...');
     const response = await fetch('/api/config', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...config, smtp })
     });
     const data = await response.json();
-    if (!response.ok) log('error', 'Config persistence failed', data.message);
+    // FIX: Change 'error' to uppercase 'ERROR' to match LogLevel type
+    if (!response.ok) log('ERROR', 'Config persistence failed', data.message);
     return data;
 };
 
 export const validateGraphPermissions = async (config: GraphApiConfig): Promise<{ success: boolean; results?: PermissionResult; message: string }> => {
-  log('info', 'Verifying Infrastructure Permissions...');
+  // FIX: Change 'info' to uppercase 'INFO' to match LogLevel type
+  log('INFO', 'Verifying Infrastructure Permissions...');
   try {
       const response = await fetch('/api/validate-permissions', { method: 'POST' });
       const result = await response.json();
-      if (result.success) log('success', 'Permission Handshake Complete');
-      else log('error', 'Handshake Failed', result.message);
+      // FIX: Change 'success' to uppercase 'SUCCESS' to match LogLevel type
+      if (result.success) log('SUCCESS', 'Permission Handshake Complete');
+      // FIX: Change 'error' to uppercase 'ERROR' to match LogLevel type
+      else log('ERROR', 'Handshake Failed', result.message);
       return result;
   } catch (e: any) {
-      log('error', 'Network Error during Permission Check', e.message);
+      // FIX: Change 'error' to uppercase 'ERROR' to match LogLevel type
+      log('ERROR', 'Network Error during Permission Check', e.message);
       throw e;
   }
 };
 
 export const testSmtpConnection = async (config: SmtpConfig): Promise<{ success: boolean; message: string }> => {
-    log('info', 'Probing SMTP Transport...');
+    // FIX: Change 'info' to uppercase 'INFO' to match LogLevel type
+    log('INFO', 'Probing SMTP Transport...');
     const response = await fetch('/api/test-smtp', { method: 'POST' });
     const result = await response.json();
-    if (result.success) log('success', 'SMTP Transport Active');
-    else log('error', 'SMTP Probe Failed', result.message);
+    // FIX: Change 'success' to uppercase 'SUCCESS' to match LogLevel type
+    if (result.success) log('SUCCESS', 'SMTP Transport Active');
+    // FIX: Change 'error' to uppercase 'ERROR' to match LogLevel type
+    else log('ERROR', 'SMTP Probe Failed', result.message);
     return result;
 };
 
 export const runNotificationJob = async (profile: NotificationProfile, mode: 'preview' | 'test' | 'live', currentUserEmail: string = 'admin@local', scheduleTime?: string): Promise<JobResult> => {
-    log('info', `Triggering ${mode.toUpperCase()} Engine Execution...`);
+    // FIX: Change 'info' to uppercase 'INFO' to match LogLevel type
+    log('INFO', `Triggering ${mode.toUpperCase()} Engine Execution...`);
     try {
         const response = await fetch('/api/run-job', {
             method: 'POST',
@@ -91,7 +104,8 @@ export const runNotificationJob = async (profile: NotificationProfile, mode: 'pr
         }
         return data;
     } catch (e: any) {
-        log('error', 'Critical Engine Error', e.message);
+        // FIX: Change 'error' to uppercase 'ERROR' to match LogLevel type
+        log('ERROR', 'Critical Engine Error', e.message);
         throw e;
     }
 };
@@ -113,7 +127,8 @@ export const saveProfile = async (profile: NotificationProfile): Promise<Notific
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(profiles)
     });
-    log('success', `Saved profile: ${profile.name}`);
+    // FIX: Change 'success' to uppercase 'SUCCESS' to match LogLevel type
+    log('SUCCESS', `Saved profile: ${profile.name}`);
     return profile;
 }
 

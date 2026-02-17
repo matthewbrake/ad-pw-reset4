@@ -1,9 +1,9 @@
 
-import { User, GraphApiConfig, SmtpConfig, NotificationProfile, LogEntry, PermissionResult, JobResult } from '../types';
+import { User, GraphApiConfig, SmtpConfig, NotificationProfile, LogEntry, PermissionResult, LogLevel } from '../types';
 
 let listeners: ((log: LogEntry) => void)[] = [];
 
-export const log = (level: LogEntry['level'], message: string, details?: any) => {
+export const log = (level: LogLevel, message: string, details?: any) => {
     const entry: LogEntry = {
         timestamp: new Date().toLocaleTimeString(),
         level,
@@ -19,6 +19,7 @@ export const subscribeToLogs = (listener: (log: LogEntry) => void) => {
 };
 
 const safeFetchJson = async (url: string, options?: RequestInit) => {
+  log('DEBUG', `Fetch: ${url}`);
   try {
     const response = await fetch(url, {
         ...options,
@@ -33,7 +34,8 @@ const safeFetchJson = async (url: string, options?: RequestInit) => {
 
     if (!response.ok) {
         if (response.status === 404) {
-            throw new Error(`Critical Error: API Endpoint '${url}' is unreachable. Please verify server state.`);
+            log('ERROR', `Endpoint 404: ${url}`);
+            throw new Error(`Critical Error: API Endpoint '${url}' is unreachable (404). Please verify backend state and dist build.`);
         }
         let errorMessage = `API Fault (${response.status})`;
         try {
@@ -42,16 +44,19 @@ const safeFetchJson = async (url: string, options?: RequestInit) => {
         } catch (e) {
             errorMessage = rawText.substring(0, 100) || errorMessage;
         }
+        log('ERROR', `API Failure [${response.status}] for ${url}`, errorMessage);
         throw new Error(errorMessage);
     }
 
     if (!contentType || !contentType.includes('application/json')) {
+        log('ERROR', `Mime Type Mismatch: ${url}`, contentType);
         throw new Error(`Protocol Mismatch: Expected JSON from ${url} but received ${contentType || 'plain text'}.`);
     }
 
     return JSON.parse(rawText);
   } catch (e: any) {
     if (e.message.includes('Failed to fetch')) {
+        log('ERROR', `Network Connection Refused: ${url}`);
         throw new Error(`Network Connection Interrupted: Server at ${url} is offline.`);
     }
     console.error(`Fetch Exception [${url}]:`, e.message);
@@ -63,87 +68,83 @@ export const fetchBackendConfig = async (): Promise<any> => {
     return safeFetchJson('/api/config');
 };
 
-export const checkConnectivity = async (): Promise<boolean> => {
+export const checkConnectivity = async (): Promise<any> => {
     try {
         const res = await safeFetchJson('/api/ping');
-        return res.status === 'online';
+        return res;
     } catch (e) {
-        return false;
+        return null;
     }
 };
 
 export const fetchUsers = async (config?: GraphApiConfig): Promise<User[]> => {
-  log('info', 'Executing Global Identity Sync...');
+  log('INFO', 'Executing Directory Synchronizer...');
   try {
     const data = await safeFetchJson('/api/users');
     if (!Array.isArray(data)) {
         throw new Error(data.message || 'Identity service returned invalid data format.');
     }
-    log('success', `Synchronized ${data.length} identities.`);
+    log('SUCCESS', `Synchronized ${data.length} identities.`);
     return data;
   } catch (error: any) {
-    log('error', 'Sync Failure', error.message);
+    log('ERROR', 'Identity Sync Failure', error.message);
     throw error;
   }
 };
 
 export const saveBackendConfig = async (config: GraphApiConfig, smtp: SmtpConfig) => {
-    log('info', 'Committing Infrastructure Delta...');
+    log('INFO', 'Committing Configuration Updates...');
     try {
         const data = await safeFetchJson('/api/config', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ ...config, smtp })
         });
-        log('success', 'Infrastructure updated.');
+        log('SUCCESS', 'Core configuration updated.');
         return data;
     } catch (e: any) {
-        log('error', 'Update Failed', e.message);
+        log('ERROR', 'Update Transmission Failure', e.message);
         throw e;
     }
 };
 
 export const validateGraphPermissions = async (config: GraphApiConfig): Promise<{ success: boolean; results?: PermissionResult; message: string }> => {
-  log('info', 'Testing Handshake Logic...');
+  log('DEBUG', 'Testing Permission Handshake...');
   try {
       const result = await safeFetchJson('/api/validate-permissions', { method: 'POST' });
-      if (result.success) log('success', 'Handshake Validated.');
-      else log('error', 'Handshake Rejected', result.message);
+      if (result.success) log('SUCCESS', 'Permission Logic Validated.');
+      else log('ERROR', 'Permission Rejected', result.message);
       return result;
   } catch (e: any) {
-      log('error', 'Protocol Error', e.message);
+      log('ERROR', 'Handshake Protocol Fault', e.message);
       throw e;
   }
 };
 
 export const testSmtpConnection = async (config: SmtpConfig): Promise<{ success: boolean; message: string }> => {
-    log('info', 'Probing SMTP Transport...');
+    log('DEBUG', 'Probing SMTP Transport...');
     try {
         const result = await safeFetchJson('/api/test-smtp', { method: 'POST' });
-        if (result.success) log('success', 'SMTP Active.');
-        else log('error', 'SMTP Probe Failure', result.message);
+        if (result.success) log('SUCCESS', 'SMTP Transport Active.');
+        else log('ERROR', 'SMTP Protocol Failure', result.message);
         return result;
     } catch (e: any) {
-        log('error', 'SMTP Protocol Error', e.message);
+        log('ERROR', 'SMTP Transmission Error', e.message);
         throw e;
     }
 };
 
-export const runNotificationJob = async (profile: NotificationProfile, mode: 'preview' | 'test' | 'live', currentUserEmail: string = 'admin@local', scheduleTime?: string): Promise<JobResult> => {
-    log('info', `Firing ${mode.toUpperCase()} Engine Segment...`);
+export const runNotificationJob = async (profile: NotificationProfile, mode: 'preview' | 'test' | 'live', currentUserEmail: string = 'admin@local', scheduleTime?: string): Promise<any> => {
+    log('INFO', `Initializing ${mode.toUpperCase()} Engine Job...`);
     try {
         const data = await safeFetchJson('/api/run-job', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ profile, mode, testEmail: currentUserEmail, scheduleTime })
         });
-        
-        if (data.logs && Array.isArray(data.logs)) {
-            data.logs.forEach((l: any) => log(l.level, l.message, l.details));
-        }
         return data;
     } catch (e: any) {
-        log('error', 'Critical Engine Halt', e.message);
+        log('ERROR', 'Engine Job Execution Failed', e.message);
         throw e;
     }
 };
@@ -164,7 +165,7 @@ export const saveProfile = async (profile: NotificationProfile): Promise<Notific
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(profiles)
     });
-    log('success', `Logic Saved: ${profile.name}`);
+    log('SUCCESS', `Profile Saved: ${profile.name}`);
     return profile;
 }
 
