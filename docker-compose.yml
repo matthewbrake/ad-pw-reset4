@@ -1,0 +1,16 @@
+
+version: '3.8'
+
+services:
+  app:
+    build: .
+    container_name: azure-password-notifier
+    ports:
+      - "${WEB_PORT:-8085}:3000"
+    environment:
+      - NODE_ENV=production
+    volumes:
+      # PERSIST CONFIG AND LOGS
+      - ./config:/app/config
+      - ./logs:/app/logs
+    restart: unless-stopped

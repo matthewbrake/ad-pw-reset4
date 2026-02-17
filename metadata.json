@@ -1,0 +1,5 @@
+{
+  "name": "OG -  2/4/2026 - Azure AD Password Notifier Enterprise",
+  "description": "Enterprise-grade Hybrid Azure AD password monitoring tool. Features unified data persistence, .env configuration priority, profile portablity, and real-time observability log streaming.",
+  "requestFramePermissions": []
+}
