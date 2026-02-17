@@ -1,30 +1,18 @@
 
-# Logic Profile Architecture (v4.0)
+# AD Notifier: Logic Architecture & Technical Manifest
 
-## 1. The Core Concept
-A "Profile" in this system is a self-contained unit of logic that defines **Who** gets notified, **When** they are notified, and **What** the message contains.
+## 1. Group Verification Intelligence
+Verification of Azure AD Groups is non-trivial due to Graph API's eventual consistency and the separation of Group Metadata from Membership Metadata.
+- **The Protocol**:
+  1. **Identity Resolution**: Search `/v1.0/groups?$filter=displayName eq '{name}'` to obtain the GUID.
+  2. **Transitive Expansion**: Query `/v1.0/groups/{guid}/members` with `$expand=manager`. 
+  3. **Metadata Mapping**: Users are piped through the Hybrid Expiry Logic before being presented in the "Sample Members" table.
+- **Why this is hard**: Transitive membership expansion is a heavy operation. Our engine performs this server-side to prevent browser timeouts and ensure the `$expand` logic is applied correctly to nested identities.
 
-## 2. Targeting Intelligence
-Profiles use Azure AD (Entra ID) Security Groups as the primary targeting vector.
-- **Transitive Mapping**: The system resolves Group DisplayNames to GUIDs and expands members transitively.
-- **Hybrid Detection**: The engine inspects the `onPremisesSyncEnabled` attribute. 
-  - If **True**: Cloud policies (like 'Never Expires') are ignored. Expiry is calculated as `lastPasswordChangeDateTime + SystemDefaultDays`.
-  - If **False**: Standard Cloud policies are respected.
+## 2. Hybrid Expiry Formula
+Standard Azure Cloud policies (`DisablePasswordExpiration`) are ignored for Hybrid identities.
+- **Logic**: `ExpiryDate = lastPasswordChangeDateTime + systemDefaultDays`
+- **Justification**: On-prem Domain Controllers do not communicate the exact expiry date to Entra ID; they only communicate the 'Last Set' timestamp. The engine reconstructs the expiry timeline by simulating your on-prem GPO.
 
-## 3. Cadence Staging (The T-Minus System)
-Cadence is defined as an array of integers (e.g., `[14, 7, 3, 1]`). 
-- Every 24 hours, the engine calculates the "Delta" (Days until expiry).
-- If `Delta` exists in the `cadence` array, a delivery artifact is created in the Queue.
-
-## 4. Portability (JSON Standard)
-Profiles are fully portable. Each profile can be exported as a standalone JSON object:
-```json
-{
-  "name": "Global Executive Policy",
-  "assignedGroups": ["Exec-Users"],
-  "cadence": { "daysBefore": [15, 10, 5, 1] },
-  "recipients": { "toUser": true, "toManager": true },
-  "emailTemplate": "Hello {{user.displayName}}..."
-}
-```
-Importing this JSON into another instance of the engine will immediately re-initialize the monitoring logic for that group.
+## 3. The Portability Standard
+Profiles are stored as atomic JSON artifacts. They can be hot-swapped between instances without re-authentication.
